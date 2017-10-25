@@ -1,0 +1,13 @@
+language: go
+
+branches:
+    only:
+        - master
+
+go:
+  - 1.x
+  - master
+
+script:
+  - go build -v -tags "pam"
+  - go test -v -cover -race
