@@ -1,7 +1,6 @@
 package piwik
 
 import (
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -31,6 +30,10 @@ func Piwik(options ...Options) macaron.Handler {
 	opt := prepareOptions(options)
 
 	return func(ctx *macaron.Context, logger *log.Logger) {
+		if !opt.IgnoreDoNotTrack && ctx.Req.Header.Get("DNT") == "1" {
+			return
+		}
+
 		params := make(url.Values)
 		params.Set("idsite", opt.WebsiteID)
 		params.Set("rec", "1")
@@ -49,13 +52,13 @@ func Piwik(options ...Options) macaron.Handler {
 
 		// collecting data is finished, go async now
 		go func() {
-			logger.Println(params.Encode())
 			res, err := http.Get(opt.PiwikUrl + params.Encode())
 			if err != nil {
 				logger.Println("Error contacting piwik:", err)
 			}
-			r, err := ioutil.ReadAll(res.Body)
-			logger.Println(string(r))
+			if res.StatusCode != http.StatusOK {
+				logger.Println("Error contacting piwik:", res.Status)
+			}
 		}()
 
 		ctx.Next()
