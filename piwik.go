@@ -1,7 +1,6 @@
 package piwik
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -36,13 +35,12 @@ func Piwik(options ...Options) macaron.Handler {
 		params.Set("idsite", opt.WebsiteID)
 		params.Set("rec", "1")
 
-		params.Set("url", ctx.Req.URL.String())
+		// using http cause its only purpose is logging
+		params.Set("url", "http://"+ctx.Req.Host+ctx.Req.URL.String())
 		params.Set("apiv", "1")
 
 		h := ctx.Req.Header
 		params.Set("urlref", h.Get("Referer"))
-		fmt.Println("USERAGENT")
-		fmt.Println(h.Get("Accept-Language"))
 		params.Set("ua", h.Get("User-Agent"))
 		params.Set("lang", h.Get("Accept-Language"))
 
