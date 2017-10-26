@@ -9,11 +9,19 @@ import (
 	"gopkg.in/macaron.v1"
 )
 
+// Options configures the piwik middleware
 type Options struct {
-	PiwikUrl         string
+	// The URL of your piwik installation (with our without /piwik.php)
+	PiwikURL string
+
+	// Ignore the Do not Track header that is sent by the browser. This is not recommended
 	IgnoreDoNotTrack bool
-	WebsiteID        string
-	Token            string
+
+	// The ID of the website in piwik
+	WebsiteID string
+
+	// The piwik API's access token
+	Token string
 }
 
 func prepareOptions(options []Options) Options {
@@ -21,11 +29,12 @@ func prepareOptions(options []Options) Options {
 	if len(options) > 0 {
 		opt = options[0]
 	}
-	opt.PiwikUrl = strings.TrimSuffix(strings.TrimSuffix(opt.PiwikUrl, "piwik.php"), "/") + "/piwik.php?"
+	opt.PiwikURL = strings.TrimSuffix(strings.TrimSuffix(opt.PiwikURL, "piwik.php"), "/") + "/piwik.php?"
 
 	return opt
 }
 
+// Piwik returns a new macaron.Handler that sends every request to the piwik tracking API
 func Piwik(options ...Options) macaron.Handler {
 	opt := prepareOptions(options)
 
@@ -52,7 +61,7 @@ func Piwik(options ...Options) macaron.Handler {
 
 		// collecting data is finished, go async now
 		go func() {
-			res, err := http.Get(opt.PiwikUrl + params.Encode())
+			res, err := http.Get(opt.PiwikURL + params.Encode())
 			if err != nil {
 				logger.Println("Error contacting piwik:", err)
 			}
