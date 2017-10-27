@@ -18,7 +18,7 @@ import (
 func main() {
 	m := macaron.Classic()
 	m.Use(piwik.Piwik(piwik.Options{
-		PiwikUrl:  "http://localhost/piwik",
+		PiwikURL:  "http://localhost/piwik",
 		Token:     "56ced3748e5df1b6be1e5c56aca45e7a",
 		WebsiteID: "1",
 	}))
