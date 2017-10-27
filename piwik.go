@@ -57,7 +57,7 @@ func Piwik(options ...Options) macaron.Handler {
 		params.Set("lang", h.Get("Accept-Language"))
 
 		params.Set("token_auth", opt.Token)
-		params.Set("cip", ctx.RemoteAddr())
+		params.Set("cip", strings.Trim(ctx.RemoteAddr(), "[]"))
 
 		// collecting data is finished, go async now
 		go func() {
