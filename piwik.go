@@ -39,7 +39,8 @@ func Piwik(options ...Options) macaron.Handler {
 	opt := prepareOptions(options)
 
 	return func(ctx *macaron.Context, logger *log.Logger) {
-		if !opt.IgnoreDoNotTrack && ctx.Req.Header.Get("DNT") == "1" {
+		h := ctx.Req.Header
+		if !opt.IgnoreDoNotTrack && h.Get("DNT") == "1" {
 			return
 		}
 
@@ -47,22 +48,31 @@ func Piwik(options ...Options) macaron.Handler {
 		params.Set("idsite", opt.WebsiteID)
 		params.Set("rec", "1")
 
-		// using http cause its only purpose is logging
-		params.Set("url", "http://"+ctx.Req.Host+ctx.Req.URL.String())
-		params.Set("apiv", "1")
+		proto := h.Get("X-Forwarded-Proto")
+		if proto == "" {
+			if ctx.Req.TLS != nil {
+				proto = "https"
+			} else {
+				proto = "http"
+			}
+		}
+		host := h.Get("X-Forwarded-Host")
+		if host == "" {
+			host = ctx.Req.Host
+		}
 
-		h := ctx.Req.Header
+		params.Set("url", proto+"://"+host+ctx.Req.URL.String())
+		params.Set("apiv", "1")
 		params.Set("urlref", h.Get("Referer"))
 		params.Set("ua", h.Get("User-Agent"))
 		params.Set("lang", h.Get("Accept-Language"))
 
-		params.Set("token_auth", opt.Token)
 		ip := ctx.RemoteAddr()
 		if strings.Contains(ip, ",") {
 			ipv6 := strings.Split(ip, ",")
 			ip = strings.TrimPrefix(strings.TrimSpace(ipv6[0]), "::ffff:")
 		}
-
+		params.Set("token_auth", opt.Token)
 		params.Set("cip", ip)
 
 		// collecting data is finished, go async now
