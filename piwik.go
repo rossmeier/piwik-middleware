@@ -1,9 +1,11 @@
 package piwik
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"gopkg.in/macaron.v1"
@@ -24,6 +26,41 @@ type Options struct {
 	Token string
 }
 
+// TrackingParams will be injected into the context and can be used to define
+// piwik actions, like an internal search
+type TrackingParams struct {
+	// custom variables that will be assigned to the action (cvar)
+	ActionCVar map[string]string
+
+	// custom variables that will be assigned to the visitor (_cvar)
+	VisitorCVar map[string]string
+
+	// when this is set to true, no information will be sent to piwik
+	Ignore bool
+
+	params url.Values
+}
+
+// Search notifies piwik about a search done. Params can be:
+// - the number of search results (int)
+// - the catecory of the search (string)
+func (t *TrackingParams) Search(keyword string, params ...interface{}) {
+	t.params.Set("search", keyword)
+	for _, x := range params {
+		switch x.(type) {
+		case int:
+			t.params.Set("search_count", strconv.Itoa(x.(int)))
+		case string:
+			t.params.Set("search_cat", x.(string))
+		}
+	}
+}
+
+// Ignore provides a handler that will hinder all requests from being tracked
+func Ignore(tracker *TrackingParams) {
+	tracker.Ignore = true
+}
+
 func prepareOptions(options []Options) Options {
 	var opt Options
 	if len(options) > 0 {
@@ -41,6 +78,13 @@ func Piwik(options ...Options) macaron.Handler {
 	return func(ctx *macaron.Context, logger *log.Logger) {
 		h := ctx.Req.Header
 		if !opt.IgnoreDoNotTrack && h.Get("DNT") == "1" {
+			ctx.Map(&TrackingParams{
+				ActionCVar:  make(map[string]string),
+				VisitorCVar: make(map[string]string),
+				params:      make(url.Values),
+				Ignore:      true,
+			})
+			ctx.Next()
 			return
 		}
 
@@ -75,6 +119,35 @@ func Piwik(options ...Options) macaron.Handler {
 		params.Set("token_auth", opt.Token)
 		params.Set("cip", ip)
 
+		p := &TrackingParams{
+			ActionCVar:  make(map[string]string),
+			VisitorCVar: make(map[string]string),
+			params:      params,
+		}
+		ctx.Map(p)
+		ctx.Next()
+
+		if p.Ignore {
+			return
+		}
+
+		if (len(p.ActionCVar)) > 0 {
+			b, err := json.Marshal(p.ActionCVar)
+			if err != nil {
+				logger.Println("Error marshalling ActionCVar:", err)
+			} else {
+				params.Set("cvar", string(b))
+			}
+		}
+		if (len(p.VisitorCVar)) > 0 {
+			b, err := json.Marshal(p.VisitorCVar)
+			if err != nil {
+				logger.Println("Error marshalling VisitorCVar:", err)
+			} else {
+				params.Set("_cvar", string(b))
+			}
+		}
+
 		// collecting data is finished, go async now
 		go func() {
 			res, err := http.Get(opt.PiwikURL + params.Encode())
@@ -85,7 +158,5 @@ func Piwik(options ...Options) macaron.Handler {
 				logger.Println("Error contacting piwik:", res.Status)
 			}
 		}()
-
-		ctx.Next()
 	}
 }
