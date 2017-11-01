@@ -1,4 +1,7 @@
-# piwik-middleware [![Build Status](https://travis-ci.org/veecue/piwik-middleware.svg?branch=master)](https://travis-ci.org/veecue/piwik-middleware)
+# piwik-middleware
+[![Build Status](https://travis-ci.org/veecue/piwik-middleware.svg?branch=master)](https://travis-ci.org/veecue/piwik-middleware)
+[![GoDoc](https://godoc.org/github.com/veecue/piwik-middleware?status.svg)](https://godoc.org/github.com/veecue/piwik-middleware)
+[![Go Report Card](https://goreportcard.com/badge/github.com/veecue/piwik-middleware)](https://goreportcard.com/report/github.com/veecue/piwik-middleware)
 
 Piwik is a middleware for [macaron](https://go-macaron.com) that tracks visits via [piwik](https://piwik.org)'s [HTTP Tracking API](https://developer.piwik.org/api-reference/tracking-api)
 on the serverside without any visibility for the client.
