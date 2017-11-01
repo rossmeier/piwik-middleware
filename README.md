@@ -20,13 +20,23 @@ import (
 
 func main() {
 	m := macaron.Classic()
-	m.Use(piwik.Piwik(piwik.Options{
-		PiwikURL:  "http://localhost/piwik",
-		Token:     "56ced3748e5df1b6be1e5c56aca45e7a",
-		WebsiteID: "1",
-	}))
+	const piwikenabled = true // this can come from your config
+	if piwikenabled {
+		m.Use(piwik.Piwik(piwik.Options{
+			PiwikURL:  "http://localhost/piwik",
+			Token:     "56cee37c8e0df1b6be1ebc66aca6567b",
+			WebsiteID: "1",
+		}))
+	} else {
+		// provide fake params so that the website doesn't panic
+		m.Map(piwik.FakeTrackingParams())
+	}
 	m.Get("/", func() string {
 		return "Hi"
+	})
+	m.Get("/search", func(ctx *macaron.Context, tracker *piwik.TrackingParams) {
+		// inform piwik about the search without results
+		tracker.Search(ctx.Req.URL.Query().Get("q"), 0)
 	})
 	m.Run()
 }

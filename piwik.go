@@ -160,3 +160,14 @@ func Piwik(options ...Options) macaron.Handler {
 		}()
 	}
 }
+
+// FakeTrackingParams returns TrackinParams that can be mapped to the macaron
+// instance when piwik should be disabled
+func FakeTrackingParams() *TrackingParams {
+	return &TrackingParams{
+		ActionCVar:  make(map[string]string),
+		VisitorCVar: make(map[string]string),
+		params:      make(url.Values),
+		Ignore:      true,
+	}
+}
