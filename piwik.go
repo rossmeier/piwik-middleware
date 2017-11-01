@@ -22,6 +22,9 @@ type Options struct {
 	// The ID of the website in piwik
 	WebsiteID string
 
+	// htttp client to be used for requests to piwik
+	HTTPClient *http.Client
+
 	// The piwik API's access token
 	Token string
 }
@@ -67,6 +70,9 @@ func prepareOptions(options []Options) Options {
 		opt = options[0]
 	}
 	opt.PiwikURL = strings.TrimSuffix(strings.TrimSuffix(opt.PiwikURL, "piwik.php"), "/") + "/piwik.php?"
+	if opt.HTTPClient == nil {
+		opt.HTTPClient = http.DefaultClient
+	}
 
 	return opt
 }
@@ -150,7 +156,7 @@ func Piwik(options ...Options) macaron.Handler {
 
 		// collecting data is finished, go async now
 		go func() {
-			res, err := http.Get(opt.PiwikURL + params.Encode())
+			res, err := opt.HTTPClient.Get(opt.PiwikURL + params.Encode())
 			if err != nil {
 				logger.Println("Error contacting piwik:", err)
 			}
